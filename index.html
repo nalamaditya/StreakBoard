@@ -2286,7 +2286,7 @@ function openAccount(){
     + (m.pro ? (m.manage_url && m.plan !== 'lifetime' ? '<a class="acct-btn" href="'+esc(m.manage_url)+'" target="_blank" rel="noopener">Manage or cancel subscription</a>' : '') : '<button class="acct-btn" data-action="paywall">Go Pro · 3 days free</button>')
     + '<button class="acct-btn" data-action="restore">Restore purchase</button></div>'
     + (canRank() ? '<section><div class="g-head"><span>Ranking</span></div><div class="list acct-rank"><button class="acct-row acct-nick" data-action="nick">Nickname<span>'+esc(PROF ? PROF.nick : '…')+'</span>'+I.next+'</button>'+rankToggles()+'</div></section>' : '')
-    + '<div class="list"><button class="del" data-action="logout-user">Log Out of ${esc(activeUser ? activeUser.name || activeUser.email : 'Account')}</button></div></div>');
+    + '<div class="list"><button class="del" data-action="logout-user">Log Out</button></div></div>');
 }
 /* landing previews: the real views with example data; height goes to the parent page */
 function panBoard(animate){
