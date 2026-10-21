@@ -970,6 +970,10 @@ button,.nav-item,.plate,.tabbar,.cb,.cal-d,.mcell{-webkit-user-select:none;user-
 /* week on a computer: four days on top, three below, never seven narrow ones */
 @media (min-width:1640px){.days{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.rail-theme-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;margin-bottom:8px;border-radius:14px;background:var(--fill);color:var(--label);font-size:14px;font-weight:600;cursor:pointer;transition:background .2s,opacity .2s;text-align:left}
+.rail-theme-btn:hover{opacity:.85}
+.rail-theme-btn svg{width:16px;height:16px;flex:none;stroke:currentColor}
 </style>
 </head>
 <body>
@@ -1441,7 +1445,7 @@ function renderNav(){
   const tb = $('#tabbar'), ai = [...tb.children].findIndex(x => x.classList.contains('active'));   // one highlight that slides between tabs
   tb.classList.add('slid'); tb.style.setProperty('--n', tb.children.length); if (ai >= 0) tb.style.setProperty('--i', ai);
   $('#rail-brand').innerHTML = MARK + '<div><b>Streakboard</b><small>Habit Tracker</small></div>';
-  $('#rail-foot').innerHTML = '<button class="btn-tint" style="width:100%;margin-bottom:8px;justify-content:center;gap:8px;" data-action="toggle-theme">' + (curTheme === 'dark' ? I.sun + ' Light Mode' : I.moon + ' Dark Mode') + '</button>' + '<div class="pro-badge">' + I.bolt + 'Offline Mode' + '</div>';
+  $('#rail-foot').innerHTML = '<button class="rail-theme-btn" data-action="toggle-theme" title="Toggle theme">' + (curTheme === 'dark' ? I.sun + '<span>Light mode</span>' : I.moon + '<span>Dark mode</span>') + '</button><div class="pro-badge">' + I.bolt + 'Offline Mode</div>';
 }
 
 /* ---------- Today ---------- */
