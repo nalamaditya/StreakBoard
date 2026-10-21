@@ -3117,6 +3117,23 @@ document.addEventListener('submit', e => {
   if (e.target.id === 'auth-form') handleAuthSubmit(e);
 });
 
+
+async function checkServerSession(){
+  try {
+    const me = await api('GET', '/api/auth/me');
+    if (me && me.ok && me.d && me.d.user) {
+      activeUser = me.d.user;
+      setCurrentUser(me.d.user);
+      const st = await api('GET', '/api/state');
+      if (st && st.ok && st.d && st.d.data) {
+        adopt(st.d.data, st.d.rev);
+        render();
+      }
+    }
+  } catch(e){}
+}
+checkServerSession();
+
 if (EMBED) startEmbed(); else if (DEMO) startDemo(); else if (CLOUD) boot(); else render();
 })();
 </script>
