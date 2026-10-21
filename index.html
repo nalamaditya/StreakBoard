@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0A0E2A">
+<meta name="theme-color" content="#12141A">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -21,38 +21,40 @@
    desktop = translucent sidebar + two-column board. Keeps the sheet's DNA: navy, week colours, neon squares, XP and levels.
    Type: SF Pro on Apple devices (system font), rounded numerals (SF Pro Rounded, Nunito elsewhere). */
 :root{
-  --bg:#0A0E2A; --grouped:#121840; --grouped-2:#192050; --elev:#212A62;
-  --sheet-bg:#0C0F1F; --seg-sel:#5C6080; --rail-bg:rgba(15,18,37,.72);
-  --tabbar-bg:var(--tabbar-bg);
-  --tabbar-shadow:var(--tabbar-shadow);
-  --glow-1:rgba(139,108,255,.15); --glow-2:rgba(46,230,197,.08);
-  --label:#FFFFFF; --label-2:rgba(235,235,245,.62); --label-3:rgba(235,235,245,.32); --label-4:rgba(235,235,245,.16);
-  --sep:rgba(140,150,215,.22); --fill:rgba(125,135,205,.18); --on:#0A0E2A; --accent:#2EE6C5; --red:#FF5A6E;
-  --violet:#8B6CFF; --blue:#4DA3FF; --cyan:#22D3EE; --mint:#2EE6C5; --green:#9BE564; --yellow:#FFD166; --pink:#FF74B8;
+  /* Modern Minimalist Dark Theme (Warm Obsidian / Deep Slate) */
+  --bg:#12141A; --grouped:#1A1D26; --grouped-2:#222633; --elev:#2A3040;
+  --sheet-bg:#171A23; --seg-sel:#3A4257; --rail-bg:rgba(18,20,26,.85);
+  --tabbar-bg:linear-gradient(180deg,rgba(34,38,51,.75),rgba(20,23,30,.88));
+  --tabbar-shadow:0 24px 50px -18px rgba(0,0,0,.65);
+  --glow-1:rgba(139,108,255,.12); --glow-2:rgba(46,230,197,.08);
+  --label:#EDECE9; --label-2:rgba(237,236,233,.64); --label-3:rgba(237,236,233,.36); --label-4:rgba(237,236,233,.16);
+  --sep:rgba(150,165,195,.18); --fill:rgba(150,165,195,.12); --on:#12141A; --accent:#2EE6C5; --red:#FF5A6E;
+  --violet:#987CFF; --blue:#5CAEFF; --cyan:#32D9F0; --mint:#2EE6C5; --green:#A3EB6E; --yellow:#FFD46E; --pink:#FF7DBE;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Manrope",system-ui,sans-serif;
   --round:ui-rounded,"SF Pro Rounded","Nunito",-apple-system,system-ui,sans-serif;
   --r:24px; --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.56,.64,1);
   color-scheme:dark;
 }
 [data-theme="light"]{
-  --bg:#F2F4F8; --grouped:#FFFFFF; --grouped-2:#E9ECF3; --elev:#DCE1ED;
-  --sheet-bg:#FFFFFF; --seg-sel:#CBD3E1; --rail-bg:rgba(255,255,255,.82);
-  --tabbar-bg:linear-gradient(180deg,rgba(255,255,255,.88),rgba(240,243,249,.92));
-  --tabbar-shadow:0 14px 34px -10px rgba(0,0,0,.15);
-  --glow-1:rgba(139,108,255,.08); --glow-2:rgba(46,230,197,.08);
-  --label:#11162C; --label-2:rgba(25,30,55,.68); --label-3:rgba(25,30,55,.45); --label-4:rgba(25,30,55,.2);
-  --sep:rgba(100,115,160,.18); --fill:rgba(100,115,160,.12); --on:#FFFFFF; --accent:#0BB896; --red:#E63946;
-  --violet:#7952F5; --blue:#257DEB; --cyan:#0891B2; --mint:#0BB896; --green:#4EA81D; --yellow:#D97706; --pink:#E11D74;
+  /* Warm Minimalist Editorial Aesthetic (#F7F1E7 Warm Alabaster) */
+  --bg:#F7F1E7; --grouped:#FFFFFF; --grouped-2:#EDE5D8; --elev:#E3DACB;
+  --sheet-bg:#FAF6F0; --seg-sel:#DDD2C1; --rail-bg:rgba(247,241,231,.88);
+  --tabbar-bg:linear-gradient(180deg,rgba(255,255,255,.92),rgba(244,237,227,.94));
+  --tabbar-shadow:0 14px 34px -10px rgba(78,65,48,.12);
+  --glow-1:rgba(180,140,95,.08); --glow-2:rgba(70,160,140,.06);
+  --label:#24211D; --label-2:rgba(36,33,29,.68); --label-3:rgba(36,33,29,.42); --label-4:rgba(36,33,29,.18);
+  --sep:rgba(120,105,85,.16); --fill:rgba(120,105,85,.09); --on:#FFFFFF; --accent:#1FA888; --red:#D9414B;
+  --violet:#7657E8; --blue:#2B7EE4; --cyan:#0E8F9E; --mint:#1FA888; --green:#4F9E2A; --yellow:#C97E10; --pink:#D43178;
   color-scheme:light;
 }
-[data-theme="light"] .tabbar{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.06),var(--tabbar-shadow)}
-[data-theme="light"] .card{box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.03)}
-[data-theme="light"] .sheet{box-shadow:0 -10px 40px rgba(0,0,0,.12)}
-[data-theme="light"] .plate{box-shadow:inset 0 0 0 1.5px rgba(11,184,150,.3),0 8px 24px -10px rgba(11,184,150,.25)}
-[data-theme="light"] .plate.wk{box-shadow:inset 0 0 0 1.5px rgba(121,82,245,.3),0 8px 24px -10px rgba(121,82,245,.25)}
-[data-theme="light"] .plate.mn{box-shadow:inset 0 0 0 1.5px rgba(78,168,29,.35),0 8px 24px -10px rgba(78,168,29,.25)}
+[data-theme="light"] .tabbar{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(78,65,48,.07),var(--tabbar-shadow)}
+[data-theme="light"] .card{box-shadow:0 1px 3px rgba(60,50,35,.04),0 4px 14px rgba(60,50,35,.03)}
+[data-theme="light"] .sheet{box-shadow:0 -10px 40px rgba(60,50,35,.12)}
+[data-theme="light"] .plate{box-shadow:inset 0 0 0 1.5px rgba(31,168,136,.3),0 8px 24px -10px rgba(31,168,136,.2)}
+[data-theme="light"] .plate.wk{box-shadow:inset 0 0 0 1.5px rgba(118,87,232,.3),0 8px 24px -10px rgba(118,87,232,.2)}
+[data-theme="light"] .plate.mn{box-shadow:inset 0 0 0 1.5px rgba(79,158,42,.35),0 8px 24px -10px rgba(79,158,42,.2)}
 [data-theme="light"] .sw.sel{box-shadow:0 0 0 3px var(--sheet-bg),0 0 0 5px var(--c)}
-[data-theme="light"] .ru-card, [data-theme="light"] .keep-card{background:var(--sheet-bg);box-shadow:0 14px 40px rgba(0,0,0,.15)}
+[data-theme="light"] .ru-card, [data-theme="light"] .keep-card{background:var(--sheet-bg);box-shadow:0 14px 40px rgba(60,50,35,.15)}
 [data-theme="light"] .theme-toggle{background:var(--fill);color:var(--label)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
@@ -1011,7 +1013,7 @@ function toggleTheme(){
   document.documentElement.setAttribute('data-theme', curTheme);
   try { localStorage.setItem('sb.theme', curTheme); } catch(e){}
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', curTheme === 'dark' ? '#0A0E2A' : '#F2F4F8');
+  if (meta) meta.setAttribute('content', curTheme === 'dark' ? '#12141A' : '#F7F1E7');
   render();
 }
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
