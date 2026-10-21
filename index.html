@@ -2189,7 +2189,7 @@ function openAuth(mode){
   openSheet(html);
 }
 
-function handleAuthSubmit(e){
+async function handleAuthSubmit(e){
   e.preventDefault();
   const email = $('#auth-email').value.trim().toLowerCase();
   const pass = $('#auth-pass').value;
@@ -2197,18 +2197,20 @@ function handleAuthSubmit(e){
 
   if (!email || !pass) { toast('Please fill in all fields'); return; }
 
-  const accounts = getAccounts();
-  const existing = accounts.find(a => a.email === email);
+  const endpoint = authMode === 'signup' ? '/api/auth/signup' : '/api/auth/login';
+  const r = await api('POST', endpoint, { email, password: pass, name });
 
+  if (!r.ok) {
+    toast(r.d && r.d.error ? r.d.error : 'Authentication failed');
+    return;
+  }
+
+  const user = r.d.user;
+  activeUser = user;
+  setCurrentUser(user);
+
+  // Sync state with database
   if (authMode === 'signup') {
-    if (existing) { toast('An account with this email already exists'); return; }
-    const newUser = { email, name: name || email.split('@')[0], pass, created: Date.now() };
-    accounts.push(newUser);
-    saveAccounts(accounts);
-    activeUser = newUser;
-    setCurrentUser(newUser);
-
-    // Initial fresh board for new user
     S = emptyState();
     S.habits = [
       {id:'h1'+Date.now().toString(36), name:'Wake up early', emoji:'⏰', color:'mint', since:key(today0()), sched:{t:'daily'}},
@@ -2217,20 +2219,20 @@ function handleAuthSubmit(e){
     save();
     closeSheet();
     render();
-    toast('Welcome, ' + (newUser.name || newUser.email) + '!', 'gold');
+    toast('Welcome, ' + (user.name || user.email) + '!', 'gold');
   } else {
-    if (!existing) { toast('No account found with this email. Try Create Account.'); return; }
-    if (existing.pass !== pass) { toast('Incorrect password'); return; }
-    activeUser = existing;
-    setCurrentUser(existing);
-    
-    // Load this user's data
-    const uData = load();
-    if (uData) S = uData;
-    else { S = emptyState(); save(); }
+    // Pull board from database
+    const st = await api('GET', '/api/state');
+    if (st && st.ok && st.d && st.d.data) {
+      adopt(st.d.data, st.d.rev);
+    } else {
+      const uData = load();
+      if (uData) S = uData;
+      else { S = emptyState(); save(); }
+    }
     closeSheet();
     render();
-    toast('Welcome back, ' + (existing.name || existing.email) + '!', 'gold');
+    toast('Welcome back, ' + (user.name || user.email) + '!', 'gold');
   }
 }
 
@@ -2248,10 +2250,10 @@ function switchAccount(email){
   toast('Switched to ' + (acc.name || acc.email));
 }
 
-function logoutUser(){
+async function logoutUser(){
+  await api('POST', '/api/auth/logout', {}).catch(() => {});
   activeUser = null;
   setCurrentUser(null);
-  // Revert to demo or guest state
   const c = localStorage.getItem(STORE);
   if (c) {
     try { S = JSON.parse(c); } catch(e){ S = demoState(); }
@@ -3116,6 +3118,23 @@ document.addEventListener('keydown', e => {
 document.addEventListener('submit', e => {
   if (e.target.id === 'auth-form') handleAuthSubmit(e);
 });
+
+
+async function checkServerSession(){
+  try {
+    const me = await api('GET', '/api/auth/me');
+    if (me && me.ok && me.d && me.d.user) {
+      activeUser = me.d.user;
+      setCurrentUser(me.d.user);
+      const st = await api('GET', '/api/state');
+      if (st && st.ok && st.d && st.d.data) {
+        adopt(st.d.data, st.d.rev);
+        render();
+      }
+    }
+  } catch(e){}
+}
+checkServerSession();
 
 
 async function checkServerSession(){
