@@ -1000,6 +1000,9 @@ button,.nav-item,.plate,.tabbar,.cb,.cal-d,.mcell{-webkit-user-select:none;user-
 .acct-list-item{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:14px;background:var(--fill);margin-bottom:8px;font-size:14px}
 .acct-list-item b{color:var(--label)}
 .acct-cur{font-size:12px;color:var(--accent);font-weight:700}
+
+.pro-chip, .locked-cta, .go-pro { display: none !important; }
+.locked-preview { filter: none !important; opacity: 1 !important; pointer-events: auto !important; max-height: none !important; -webkit-mask-image: none !important; mask-image: none !important; }
 </style>
 </head>
 <body>
@@ -1208,7 +1211,7 @@ function load(){
   const storeKey = activeUser ? userStorageKey(activeUser.email) : CACHE;
   try {
     const s = localStorage.getItem(storeKey);
-    if (s) { const o = JSON.parse(s); if (o && o.v === 1) return o; }
+    if (s) { const o = JSON.parse(s); if (o && o.v === 1) { o.pro = true; return o; } }
   } catch (e) {}
   return null;
 }
@@ -1510,8 +1513,8 @@ function renderBanner(){
 }
 function renderNav(){
   const items = TABS.map(t => {
-    const on = ui.tab === t[0], locked = !S.pro && (t[0] === 'week' || t[0] === 'year' || t[0] === 'money');
-    return '<button class="nav-item'+(on?' active':'')+'" data-action="tab" data-tab="'+t[0]+'"'+(on?' aria-current="page"':'')+'>'+I[t[0]]+'<span>'+t[1]+'</span>'+(locked?'<em class="pro-chip">PRO</em>':'')+'</button>';
+    const on = ui.tab === t[0], locked = false;
+    return '<button class="nav-item'+(on?' active':'')+'" data-action="tab" data-tab="'+t[0]+'"'+(on?' aria-current="page"':'')+'>'+I[t[0]]+'<span>'+t[1]+'</span>'+''+'</button>';
   }).join('');
   let bar = items.replace(/<button class="nav-item[^"]*" data-action="tab" data-tab="year"[\s\S]*?<\/button>/, '');
   if (ui.tab === 'year') bar = bar.replace('class="nav-item" data-action="tab" data-tab="month"', 'class="nav-item active" data-action="tab" data-tab="month"');
@@ -1614,7 +1617,7 @@ function viewMonth(){
   const y = first.getFullYear(), m = first.getMonth(), keys = monthKeys(y, m), n = keys.length, tk = key(base);
   const past = keys.filter(k => k <= tk), days = keys.map(parse);
   const slots = past.reduce((s,k) => s + dueOn(k).length, 0), doneAll = past.reduce((s,k) => s + doneDueOn(k).length, 0);
-  const locked = !S.pro && ui.monthOffset < 0, pct = slots ? doneAll/slots : 0;
+  const locked = false, pct = slots ? doneAll/slots : 0;
   const DN = ['Su','Mo','Tu','We','Th','Fr','Sa'], ti = keys.indexOf(tk), last = S.habits.length - 1;
   const perf = keys.map(k => k <= tk && isPerfect(k));
   const colCls = i => (perf[i] ? ' pf' : '') + (i === ti ? ' tcol' : '');
@@ -1679,7 +1682,7 @@ function dayCol(ws, i, wk, w){
     + '</div>';
 }
 function viewWeek(){
-  if (!S.pro) return lockedPreview('week');
+  // Unlocked
   const ws = addDays(weekStart(today0()), 7 * ui.weekOffset), wk = key(ws), w = getWeek(ws), tk = key(today0());
   const items = weekItems(w), dn = items.filter(i => i.done).length, pct = items.length ? dn / items.length : 0;
   const wxp = items.filter(i => i.done).reduce((s,i) => s + i.xp, 0), maxXp = items.reduce((s,i) => s + i.xp, 0);
@@ -1704,7 +1707,7 @@ function viewWeek(){
 
 /* ---------- Year ---------- */
 function viewYear(){
-  if (!S.pro) return lockedPreview('year');
+  // Unlocked
   const t = today0(), y = t.getFullYear(), tk = key(t);
   let yXp = 0, yPerf = 0, best = null;
   const rows = Array.from({length:12}, (_,m) => {
@@ -1758,7 +1761,7 @@ function moneyToday(k){
     + (spentT ? '' : '<button class="btn-tint ns'+(ns ? ' on' : '')+'" data-action="nospend" data-k="'+k+'" aria-pressed="'+ns+'">'+(ns ? '✓ ' : '')+'No-spend day</button>')+'</div></div>';
 }
 function viewMoney(){
-  if (!S.pro) return lockedPreview('money');
+  // Unlocked
   const t = today0(), tk = key(t), f = new Date(t.getFullYear(), t.getMonth() + ui.moneyOffset, 1);
   const mk = key(f).slice(0, 7), keys = monthKeys(f.getFullYear(), f.getMonth()), n = keys.length, days = keys.map(parse), cur = ui.moneyOffset === 0;
   const M = monthMoney(mk), p = M.p, logged = loggedSet(), from = keys.find(k => logged.has(k)) || tk, past = keys.filter(k => k <= tk && k >= (cur ? from : keys[0]));   // days logged count from the first logged day
@@ -1860,19 +1863,8 @@ function openPlan(){
 }
 
 /* ---------- free plan locks ---------- */
-function lockedBlock(title, text, inner){
-  return '<div class="locked-view"><div class="locked-preview" aria-hidden="true" inert>'+inner+'</div><div class="card locked-cta"><em class="pro-chip">PRO</em><h2>'+title+'</h2><p>'+text+'</p><button class="btn" data-action="paywall">Try Pro free for 3 days</button></div></div>';
-}
-function lockedPreview(which){
-  const keep = S, keepWeek = ui.weekOffset, keepMoney = ui.moneyOffset, keepRings = ringPrev;
-  S = demoState(); ui.weekOffset = 0; ui.moneyOffset = 0; ringPrev = {};
-  const inner = which === 'week' ? viewWeek() : which === 'money' ? viewMoney() : viewYear();
-  S = keep; ui.weekOffset = keepWeek; ui.moneyOffset = keepMoney; ringPrev = keepRings;
-  return which === 'week'
-    ? lockedBlock('Week Planner', 'A Boss task for the week, Big 3 for every day, and a week rank from Just starting to Unstoppable.', inner)
-    : which === 'money' ? lockedBlock('Money', 'A monthly budget next to your habits: what’s left to spend each day, bills, savings and no-spend days.', inner)
-    : lockedBlock('Your year', 'Every month side by side: progress, XP, perfect days and best streaks.', inner);
-}
+function lockedBlock(title, text, inner){ return inner; }
+function lockedPreview(which){ return which === 'week' ? viewWeek() : which === 'money' ? viewMoney() : viewYear(); }
 
 /* ---------- render ---------- */
 function render(){
