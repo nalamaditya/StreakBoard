@@ -3120,22 +3120,6 @@ document.addEventListener('submit', e => {
 });
 
 
-async function checkServerSession(){
-  try {
-    const me = await api('GET', '/api/auth/me');
-    if (me && me.ok && me.d && me.d.user) {
-      activeUser = me.d.user;
-      setCurrentUser(me.d.user);
-      const st = await api('GET', '/api/state');
-      if (st && st.ok && st.d && st.d.data) {
-        adopt(st.d.data, st.d.rev);
-        render();
-      }
-    }
-  } catch(e){}
-}
-checkServerSession();
-
 
 async function checkServerSession(){
   try {
@@ -3146,8 +3130,11 @@ async function checkServerSession(){
       const st = await api('GET', '/api/state');
       if (st && st.ok && st.d && st.d.data) {
         adopt(st.d.data, st.d.rev);
-        render();
+      } else {
+        const u = load();
+        if (u) S = u;
       }
+      render();
     }
   } catch(e){}
 }
