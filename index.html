@@ -1983,10 +1983,27 @@ function openFresh(){
 }
 /* ---------- account + sync with the server ---------- */
 async function api(method, p, body){
-  // 100% offline local mock - no network requests
-  if (p === '/api/me') return {ok: true, status: 200, d: {email: 'local@streakboard.local', pro: true}};
-  if (p === '/api/pricing') return {ok: true, status: 200, d: {trial_days: 0, week: 0, month: 0, year: 0, off_pct: 0}};
-  return {ok: true, status: 200, d: {}};
+  try {
+    let token = null;
+    try { token = localStorage.getItem('sb_auth_token'); } catch(e){}
+    const headers = { 'content-type': 'application/json' };
+    if (token) headers['authorization'] = 'Bearer ' + token;
+    
+    const opts = {
+      method,
+      credentials: 'include',
+      headers: body ? headers : (token ? { 'authorization': 'Bearer ' + token } : {})
+    };
+    if (body) opts.body = JSON.stringify(body);
+    
+    const r = await fetch(p, opts);
+    let d = null;
+    try { d = await r.json(); } catch(e){}
+    return { ok: r.ok, status: r.status, d: d || {} };
+  } catch(e) {
+    console.error('API Error:', e);
+    return { ok: false, status: 0, d: { error: e.message } };
+  }
 }
 // the app may run on app.<domain>: login and the landing live on the main domain
 const MAIN = location.hostname.startsWith('app.') ? location.protocol + '//' + location.hostname.slice(4) : '';
@@ -2219,6 +2236,7 @@ async function handleAuthSubmit(e){
   }
 
   const user = r.d.user;
+  if (r.d.token) { try { localStorage.setItem('sb_auth_token', r.d.token); } catch(e){} }
   activeUser = user;
   setCurrentUser(user);
 
@@ -2262,6 +2280,7 @@ function switchAccount(email){
 
 async function logoutUser(){
   await api('POST', '/api/auth/logout', {}).catch(() => {});
+  try { localStorage.removeItem('sb_auth_token'); } catch(e){} 
   activeUser = null;
   setCurrentUser(null);
   const c = localStorage.getItem(STORE);
