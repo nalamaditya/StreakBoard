@@ -2163,45 +2163,58 @@ function openAuth(mode){
   const accounts = getAccounts();
   const otherAccounts = accounts.filter(a => !activeUser || a.email !== activeUser.email);
 
-  let html = '<div class="form auth-sheet">'
-    + '<div class="nav"><button class="l" data-action="close-sheet">Cancel</button><h2>' + (activeUser ? 'Switch or Log In' : 'Sign In') + '</h2><button class="r" data-action="close-sheet">Done</button></div>'
+  let formHtml = '<div class="form auth-sheet">'
+    + '<div class="nav"><button class="l" data-action="close-sheet">Cancel</button><h2>' + (activeUser ? 'Switch or Log In' : (authMode === 'signup' ? 'Create Account' : 'Log In')) + '</h2><button class="r" data-action="close-sheet">Done</button></div>'
     + '<div class="auth-tabs" role="tablist">'
-      + '<button class="auth-tab ' + (authMode === 'login' ? 'active' : '') + '" data-action="auth-tab" data-mode="login">Log In</button>'
-      + '<button class="auth-tab ' + (authMode === 'signup' ? 'active' : '') + '" data-action="auth-tab" data-mode="signup">Create Account</button>'
+      + '<button type="button" class="auth-tab ' + (authMode === 'login' ? 'active' : '') + '" data-action="auth-tab" data-mode="login">Log In</button>'
+      + '<button type="button" class="auth-tab ' + (authMode === 'signup' ? 'active' : '') + '" data-action="auth-tab" data-mode="signup">Create Account</button>'
     + '</div>'
-    + '<form id="auth-form">'
-      + '<input class="inp" type="text" id="auth-name" placeholder="Your Name" ' + (authMode === 'signup' ? 'required' : 'style="display:none"') + ' />'
+    + '<form id="auth-form" onsubmit="return false;">'
+      + '<input class="inp" type="text" id="auth-name" placeholder="Your Name" ' + (authMode === 'signup' ? '' : 'style="display:none"') + ' />'
       + '<input class="inp" type="email" id="auth-email" placeholder="Email address" required autocomplete="email" />'
       + '<input class="inp" type="password" id="auth-pass" placeholder="Password" required autocomplete="current-password" />'
-      + '<button type="submit" class="btn btn-big" style="margin-top:8px">' + (authMode === 'login' ? 'Log In to Board' : 'Create My Account') + '</button>'
+      + '<button type="button" id="auth-submit-btn" class="btn btn-big" data-action="submit-auth" style="margin-top:8px">' + (authMode === 'login' ? 'Log In to Board' : 'Create My Account') + '</button>'
     + '</form>';
 
   if (otherAccounts.length) {
-    html += '<section style="margin-top:16px"><div class="g-head"><span>Other Accounts on this device</span></div>';
+    formHtml += '<section style="margin-top:16px"><div class="g-head"><span>Other Accounts on this device</span></div>';
     otherAccounts.forEach(acc => {
-      html += '<div class="acct-list-item"><div><b>' + esc(acc.name || acc.email) + '</b><div class="l2" style="font-size:12px">' + esc(acc.email) + '</div></div>'
-        + '<button class="btn-tint" data-action="switch-acc" data-email="' + esc(acc.email) + '">Switch</button></div>';
+      formHtml += '<div class="acct-list-item"><div><b>' + esc(acc.name || acc.email) + '</b><div class="l2" style="font-size:12px">' + esc(acc.email) + '</div></div>'
+        + '<button type="button" class="btn-tint" data-action="switch-acc" data-email="' + esc(acc.email) + '">Switch</button></div>';
     });
-    html += '</section>';
+    formHtml += '</section>';
   }
 
-  html += '</div>';
-  openSheet(html);
+  formHtml += '</div>';
+  openSheet(formHtml);
 }
-
 async function handleAuthSubmit(e){
-  e.preventDefault();
-  const email = $('#auth-email').value.trim().toLowerCase();
-  const pass = $('#auth-pass').value;
-  const name = $('#auth-name') ? $('#auth-name').value.trim() : '';
+  if (e && e.preventDefault) e.preventDefault();
+  const emailEl = document.getElementById('auth-email');
+  const passEl = document.getElementById('auth-pass');
+  const nameEl = document.getElementById('auth-name');
 
-  if (!email || !pass) { toast('Please fill in all fields'); return; }
+  const email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+  const pass = passEl ? passEl.value : '';
+  const name = nameEl ? nameEl.value.trim() : '';
+
+  if (!email || !pass) {
+    toast('Please enter both email and password');
+    if (!email && emailEl) emailEl.focus();
+    else if (passEl) passEl.focus();
+    return;
+  }
+
+  const submitBtn = document.getElementById('auth-submit-btn');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Authenticating…'; }
 
   const endpoint = authMode === 'signup' ? '/api/auth/signup' : '/api/auth/login';
   const r = await api('POST', endpoint, { email, password: pass, name });
 
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = (authMode === 'login' ? 'Log In to Board' : 'Create My Account'); }
+
   if (!r.ok) {
-    toast(r.d && r.d.error ? r.d.error : 'Authentication failed');
+    toast(r.d && r.d.error ? r.d.error : 'Authentication failed. Please check credentials.');
     return;
   }
 
@@ -2217,9 +2230,6 @@ async function handleAuthSubmit(e){
       {id:'h2'+Date.now().toString(36), name:'Read 10 pages', emoji:'📖', color:'blue', since:key(today0()), sched:{t:'daily'}}
     ];
     save();
-    closeSheet();
-    render();
-    toast('Welcome, ' + (user.name || user.email) + '!', 'gold');
   } else {
     // Pull board from database
     const st = await api('GET', '/api/state');
@@ -2230,12 +2240,12 @@ async function handleAuthSubmit(e){
       if (uData) S = uData;
       else { S = emptyState(); save(); }
     }
-    closeSheet();
-    render();
-    toast('Welcome back, ' + (user.name || user.email) + '!', 'gold');
   }
-}
 
+  closeSheet();
+  render();
+  toast('Signed in as ' + (user.name || user.email), 'gold');
+}
 function switchAccount(email){
   const accounts = getAccounts();
   const acc = accounts.find(a => a.email === email);
@@ -2936,6 +2946,7 @@ document.addEventListener('click', e => {
   else if (a === 'auth-tab') openAuth(t.dataset.mode);
   else if (a === 'switch-acc') switchAccount(t.dataset.email);
   else if (a === 'logout-user') logoutUser();
+  else if (a === 'submit-auth') handleAuthSubmit();
   else if (a === 'day') openDay(t.dataset.k);
   else if (a === 'mview') { if (EMBED) ui.mview = t.dataset.v; else try { localStorage.setItem('sb.mview', t.dataset.v); } catch (e) {} boardEnter = t.dataset.v === 'board'; render(); if (EMBED && t.dataset.v === 'board') panBoard(true); }
   else if (a === 'mind') { const m = S.mind[t.dataset.k] || (S.mind[t.dataset.k] = {}); const v = +t.dataset.v; m[t.dataset.f] = m[t.dataset.f] === v ? 0 : v; save(); render(); }
