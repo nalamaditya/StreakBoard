@@ -1,4 +1,4 @@
-# StreakBoard (Personal Replica)
+# StreakBoard 
 
 A lightweight, private, offline-first habit tracker, week planner, and goal management dashboard.
 
