@@ -990,6 +990,16 @@ button,.nav-item,.plate,.tabbar,.cb,.cal-d,.mcell{-webkit-user-select:none;user-
 .rail-theme-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;margin-bottom:8px;border-radius:14px;background:var(--fill);color:var(--label);font-size:14px;font-weight:600;cursor:pointer;transition:background .2s,opacity .2s;text-align:left}
 .rail-theme-btn:hover{opacity:.85}
 .rail-theme-btn svg{width:16px;height:16px;flex:none;stroke:currentColor}
+
+/* Auth & Account Switcher */
+.auth-sheet .inp{border:1px solid var(--sep);border-radius:14px;padding:12px 14px;font-size:16px;background:var(--grouped);color:var(--label);margin-bottom:12px}
+.auth-sheet .inp:focus{border-color:var(--accent)}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:14px;background:var(--fill);margin-bottom:16px}
+.auth-tab{padding:8px;text-align:center;font-weight:600;font-size:14px;border-radius:10px;color:var(--label-2);transition:all .2s}
+.auth-tab.active{background:var(--grouped);color:var(--label);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.acct-list-item{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:14px;background:var(--fill);margin-bottom:8px;font-size:14px}
+.acct-list-item b{color:var(--label)}
+.acct-cur{font-size:12px;color:var(--accent);font-weight:700}
 </style>
 </head>
 <body>
@@ -1086,7 +1096,8 @@ const I = {
   prev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg>',
   next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>',
   sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
-  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
 };
 const TABS = [['today','Today'],['month','Month'],['week','Week'],['money','Money'],['year','Year'],['top','Ranks']];
 /* Money: spending categories with a starting monthly budget (US-style), and icons for new ones */
@@ -1144,6 +1155,43 @@ function schedText(h){
 function nextDue(h, k){ let d = parse(k); for (let i = 1; i <= 14; i++) { d = addDays(d,1); if (isDue(h, key(d))) return d; } return null; }
 
 /* ---------- storage ---------- */
+
+/* ---------- Local Multi-Account Authentication System ---------- */
+const ACCTS_KEY = 'sb.accounts';
+const CUR_USER_KEY = 'sb.currentUser';
+
+function getAccounts(){
+  try {
+    const raw = localStorage.getItem(ACCTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e){ return []; }
+}
+
+function saveAccounts(list){
+  try { localStorage.setItem(ACCTS_KEY, JSON.stringify(list)); } catch(e){}
+}
+
+function getCurrentUser(){
+  try {
+    const raw = localStorage.getItem(CUR_USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e){ return null; }
+}
+
+function setCurrentUser(user){
+  try {
+    if (user) localStorage.setItem(CUR_USER_KEY, JSON.stringify(user));
+    else localStorage.removeItem(CUR_USER_KEY);
+  } catch(e){}
+}
+
+// User state storage key scoped to current account
+function userStorageKey(email){
+  return 'streakboard.user.' + (email ? email.toLowerCase().trim() : 'guest');
+}
+
+let activeUser = getCurrentUser();
+
 const STORE = 'streakboard.sheets.v1';
 const QS = new URLSearchParams(location.search);
 const EMBED = QS.get('embed') || '';                                         // landing previews: example data in memory, nothing saved
@@ -1155,11 +1203,19 @@ let ME = null, REV = 0, CACHE = DEMO ? DEMO_KEY : STORE, dirty = false, pushing 
 let LOCKED = false, PRICING = null, cdTimer = 0, lastTab = '', stopPan = false, slideDir = 0, fromHabits = false, keptDemo = false;   // LOCKED: signed in without a subscription — preview behind the plans sheet, nothing saved
 const emptyState = () => ({v:1, demo:false, pro:true, habits:[], checks:{}, mind:{}, weeks:{}, ui:{tab:'today'}});
 const pickMax = () => S.pro ? 12 : FREE_HABITS;
-function load(){ if (EMBED) return null; try { const s = localStorage.getItem(CACHE); if (s) { const o = JSON.parse(s); if (o && o.v === 1) return o; } } catch (e) {} return null; }
+function load(){
+  if (EMBED) return null;
+  const storeKey = activeUser ? userStorageKey(activeUser.email) : CACHE;
+  try {
+    const s = localStorage.getItem(storeKey);
+    if (s) { const o = JSON.parse(s); if (o && o.v === 1) return o; }
+  } catch (e) {}
+  return null;
+}
 function save(){
   if (EMBED || LOCKED) return;
-  try { localStorage.setItem(CACHE, JSON.stringify(S)); } catch (e) {}
-  if (CLOUD && ME) { dirty = true; clearTimeout(pushTimer); pushTimer = setTimeout(push, 700); syncProfile(); }
+  const storeKey = activeUser ? userStorageKey(activeUser.email) : CACHE;
+  try { localStorage.setItem(storeKey, JSON.stringify(S)); } catch (e) {}
 }
 let saveTimer = 0;
 const saveSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); };
@@ -1417,7 +1473,9 @@ function renderHUD(){
   else if (ui.tab === 'money') { const f = new Date(t.getFullYear(), t.getMonth() + ui.moneyOffset, 1); cap = 'Budget · ' + f.toLocaleDateString('en-US',{month:'long', year:'numeric'}); title = 'Money'; tools = S.pro ? sw('money-m', ui.moneyOffset >= 0) : ''; }
   else if (ui.tab === 'top') { cap = 'Profile · Leaderboard'; title = 'Ranks'; }
   else { cap = 'Your year in habits'; title = String(t.getFullYear()); }
-  const av = CLOUD && ME ? '<button class="avatar" data-action="account" aria-label="Account">'+esc(ME.email.slice(0,1))+'</button>' : '';
+  const av = activeUser 
+    ? '<button class="avatar" data-action="account" aria-label="Account" title="' + esc(activeUser.name || activeUser.email) + '">' + esc((activeUser.name || activeUser.email).slice(0,1).toUpperCase()) + '</button>'
+    : '<button class="pillbtn" data-action="open-auth" title="Sign In / Create Account" aria-label="Sign In">' + I.user + '</button>';
   const thBtn = '<button class="pillbtn" data-action="toggle-theme" aria-label="Toggle light or dark theme" title="Toggle theme">'+(curTheme === 'dark' ? I.sun : I.moon)+'</button>';
   $('#hud').innerHTML = '<div style="min-width:0"><div class="cap">'+esc(cap)+'</div><h1 class="large">'+esc(title)+'</h1></div><div class="top-r">'+thBtn+(tools||'')+(av||'')+'</div>';
   const cu = (k, v, txt, suf) => '<span class="cu" data-k="'+k+'" data-v="'+v+'"'+(suf ? ' data-s="'+suf+'"' : '')+'>'+txt+'</span>';
@@ -1460,7 +1518,9 @@ function renderNav(){
   $('#tabbar').innerHTML = bar; $('#rail-nav').innerHTML = items;
   const tb = $('#tabbar'), ai = [...tb.children].findIndex(x => x.classList.contains('active'));   // one highlight that slides between tabs
   tb.classList.add('slid'); tb.style.setProperty('--n', tb.children.length); if (ai >= 0) tb.style.setProperty('--i', ai);
-  $('#rail-brand').innerHTML = MARK + '<div><b>Streakboard</b><small>Habit Tracker</small></div>';
+  const userLabel = activeUser ? esc(activeUser.name || activeUser.email) : 'Offline Guest';
+  $('#rail-brand').innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;width:100%"><div style="display:flex;align-items:center;gap:10px">' + MARK + '<div><b>Streakboard</b><small>' + userLabel + '</small></div></div>'
+    + '<button class="pillbtn" data-action="account" style="width:30px;height:30px" title="Account profile">' + (activeUser ? esc(userLabel.slice(0,1).toUpperCase()) : I.user) + '</button></div>';
   $('#rail-foot').innerHTML = '<button class="rail-theme-btn" data-action="toggle-theme" title="Toggle theme">' + (curTheme === 'dark' ? I.sun + '<span>Light mode</span>' : I.moon + '<span>Dark mode</span>') + '</button><div class="pro-badge">' + I.bolt + 'Offline Mode</div>';
 }
 
@@ -2103,20 +2163,130 @@ async function openPlans(reason, block){
     + '<p class="fine" id="pay-fine"></p></div>');
   updatePlanFine();
 }
+
+let authMode = 'login'; // 'login' | 'signup'
+
+function openAuth(mode){
+  if (mode) authMode = mode;
+  const accounts = getAccounts();
+  const otherAccounts = accounts.filter(a => !activeUser || a.email !== activeUser.email);
+
+  let html = '<div class="form auth-sheet">'
+    + '<div class="nav"><button class="l" data-action="close-sheet">Cancel</button><h2>' + (activeUser ? 'Switch or Log In' : 'Sign In') + '</h2><button class="r" data-action="close-sheet">Done</button></div>'
+    + '<div class="auth-tabs" role="tablist">'
+      + '<button class="auth-tab ' + (authMode === 'login' ? 'active' : '') + '" data-action="auth-tab" data-mode="login">Log In</button>'
+      + '<button class="auth-tab ' + (authMode === 'signup' ? 'active' : '') + '" data-action="auth-tab" data-mode="signup">Create Account</button>'
+    + '</div>'
+    + '<form id="auth-form">'
+      + '<input class="inp" type="text" id="auth-name" placeholder="Your Name" ' + (authMode === 'signup' ? 'required' : 'style="display:none"') + ' />'
+      + '<input class="inp" type="email" id="auth-email" placeholder="Email address" required autocomplete="email" />'
+      + '<input class="inp" type="password" id="auth-pass" placeholder="Password" required autocomplete="current-password" />'
+      + '<button type="submit" class="btn btn-big" style="margin-top:8px">' + (authMode === 'login' ? 'Log In to Board' : 'Create My Account') + '</button>'
+    + '</form>';
+
+  if (otherAccounts.length) {
+    html += '<section style="margin-top:16px"><div class="g-head"><span>Other Accounts on this device</span></div>';
+    otherAccounts.forEach(acc => {
+      html += '<div class="acct-list-item"><div><b>' + esc(acc.name || acc.email) + '</b><div class="l2" style="font-size:12px">' + esc(acc.email) + '</div></div>'
+        + '<button class="btn-tint" data-action="switch-acc" data-email="' + esc(acc.email) + '">Switch</button></div>';
+    });
+    html += '</section>';
+  }
+
+  html += '</div>';
+  openSheet(html);
+}
+
+function handleAuthSubmit(e){
+  e.preventDefault();
+  const email = $('#auth-email').value.trim().toLowerCase();
+  const pass = $('#auth-pass').value;
+  const name = $('#auth-name') ? $('#auth-name').value.trim() : '';
+
+  if (!email || !pass) { toast('Please fill in all fields'); return; }
+
+  const accounts = getAccounts();
+  const existing = accounts.find(a => a.email === email);
+
+  if (authMode === 'signup') {
+    if (existing) { toast('An account with this email already exists'); return; }
+    const newUser = { email, name: name || email.split('@')[0], pass, created: Date.now() };
+    accounts.push(newUser);
+    saveAccounts(accounts);
+    activeUser = newUser;
+    setCurrentUser(newUser);
+
+    // Initial fresh board for new user
+    S = emptyState();
+    S.habits = [
+      {id:'h1'+Date.now().toString(36), name:'Wake up early', emoji:'⏰', color:'mint', since:key(today0()), sched:{t:'daily'}},
+      {id:'h2'+Date.now().toString(36), name:'Read 10 pages', emoji:'📖', color:'blue', since:key(today0()), sched:{t:'daily'}}
+    ];
+    save();
+    closeSheet();
+    render();
+    toast('Welcome, ' + (newUser.name || newUser.email) + '!', 'gold');
+  } else {
+    if (!existing) { toast('No account found with this email. Try Create Account.'); return; }
+    if (existing.pass !== pass) { toast('Incorrect password'); return; }
+    activeUser = existing;
+    setCurrentUser(existing);
+    
+    // Load this user's data
+    const uData = load();
+    if (uData) S = uData;
+    else { S = emptyState(); save(); }
+    closeSheet();
+    render();
+    toast('Welcome back, ' + (existing.name || existing.email) + '!', 'gold');
+  }
+}
+
+function switchAccount(email){
+  const accounts = getAccounts();
+  const acc = accounts.find(a => a.email === email);
+  if (!acc) return;
+  activeUser = acc;
+  setCurrentUser(acc);
+  const uData = load();
+  if (uData) S = uData;
+  else { S = emptyState(); save(); }
+  closeSheet();
+  render();
+  toast('Switched to ' + (acc.name || acc.email));
+}
+
+function logoutUser(){
+  activeUser = null;
+  setCurrentUser(null);
+  // Revert to demo or guest state
+  const c = localStorage.getItem(STORE);
+  if (c) {
+    try { S = JSON.parse(c); } catch(e){ S = demoState(); }
+  } else S = demoState();
+  closeSheet();
+  render();
+  toast('Logged out');
+}
+
 function openAccount(){
+  if (!activeUser) { openAuth('login'); return; }
   const m = ME || {}, plan = m.plan === 'year' ? 'Yearly' : m.plan === 'month' ? 'Monthly' : m.plan === 'week' ? 'Weekly' : m.plan === 'lifetime' ? 'Lifetime' : '';
   const when = m.renews_at ? new Date(m.renews_at).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '';
   const note = {trialing:'Free trial until ', canceling:'Ends ', past_due:'Payment issue · '}[m.status] || 'Renews ';
   if (canRank() && !PROF) api('GET', '/api/profile').then(r => { if (r.ok) { PROF = r.d; if ($('#sheet-body .acct-sheet')) openAccount(); } }).catch(() => {});
   openSheet('<div class="form acct-sheet"><div class="nav"><span></span><h2>Account</h2><button class="r" data-action="close-sheet">Done</button></div>'
-    + '<div class="list"><div class="acct-row">Email<span>'+esc(m.email || '')+'</span></div>'
-    + '<div class="acct-row">Plan<span>'+(m.pro ? 'Pro' + (plan ? ' · ' + plan : '') : 'Free')+'</span></div>'
+    + '<div class="list"><div class="acct-row">Name<span>'+esc(activeUser.name || 'User')+'</span></div>'
+    + '<div class="acct-row">Email<span>'+esc(activeUser.email)+'</span></div>'
+    + '<div class="acct-row">Data Storage<span>Private & Local</span></div>'
+    + '<div class="acct-row">Access<span>Pro Unlocked</span></div></div>'
+    + '<div class="list"><button class="acct-btn" data-action="open-auth">Switch or Add Account</button></div>'
     + (m.pro && when ? '<div class="acct-row">'+(m.status === 'canceling' ? 'Access' : 'Billing')+'<span>'+note+when+'</span></div>' : '')
     + '</div><div class="list">'
     + (m.pro ? (m.manage_url && m.plan !== 'lifetime' ? '<a class="acct-btn" href="'+esc(m.manage_url)+'" target="_blank" rel="noopener">Manage or cancel subscription</a>' : '') : '<button class="acct-btn" data-action="paywall">Go Pro · 3 days free</button>')
     + '<button class="acct-btn" data-action="restore">Restore purchase</button></div>'
     + (canRank() ? '<section><div class="g-head"><span>Ranking</span></div><div class="list acct-rank"><button class="acct-row acct-nick" data-action="nick">Nickname<span>'+esc(PROF ? PROF.nick : '…')+'</span>'+I.next+'</button>'+rankToggles()+'</div></section>' : '')
-    + '<div class="list"><button class="del" data-action="logout">Log Out</button></div></div>');
+    + '<div class="list"><button class="del" data-action="logout-user">Log Out of ${esc(activeUser ? activeUser.name || activeUser.email : 'Account')}</button></div></div>');
 }
 /* landing previews: the real views with example data; height goes to the parent page */
 function panBoard(animate){
@@ -2768,6 +2938,10 @@ document.addEventListener('click', e => {
   if (a === 'tab') switchTab(t.dataset.tab);
   else if (a === 'check') { toggleCheck(t.dataset.k, t.dataset.id, t); const ds = $('#sheet-body .day-sheet'); if (ds) openDay(ds.dataset.k); }
   else if (a === 'toggle-theme') toggleTheme();
+  else if (a === 'open-auth') openAuth('login');
+  else if (a === 'auth-tab') openAuth(t.dataset.mode);
+  else if (a === 'switch-acc') switchAccount(t.dataset.email);
+  else if (a === 'logout-user') logoutUser();
   else if (a === 'day') openDay(t.dataset.k);
   else if (a === 'mview') { if (EMBED) ui.mview = t.dataset.v; else try { localStorage.setItem('sb.mview', t.dataset.v); } catch (e) {} boardEnter = t.dataset.v === 'board'; render(); if (EMBED && t.dataset.v === 'board') panBoard(true); }
   else if (a === 'mind') { const m = S.mind[t.dataset.k] || (S.mind[t.dataset.k] = {}); const v = +t.dataset.v; m[t.dataset.f] = m[t.dataset.f] === v ? 0 : v; save(); render(); }
@@ -2944,6 +3118,11 @@ document.addEventListener('keydown', e => {
     const id = el.id; save(); render();
     const n = document.getElementById(id); if (n) n.focus();
   }
+});
+
+
+document.addEventListener('submit', e => {
+  if (e.target.id === 'auth-form') handleAuthSubmit(e);
 });
 
 if (EMBED) startEmbed(); else if (DEMO) startDemo(); else if (CLOUD) boot(); else render();
