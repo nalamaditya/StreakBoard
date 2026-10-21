@@ -121,6 +121,17 @@ const server = http.createServer(async (req, res) => {
   const [urlPath] = req.url.split('?');
 
   // --- API Endpoints ---
+    // Database inspector endpoint (see all users and boards in JSON)
+    if (urlPath === '/api/admin/db' && req.method === 'GET') {
+      const users = db.prepare('SELECT id, email, name, created_at FROM users').all();
+      const boards = db.prepare('SELECT user_id, rev, updated_at, state_json FROM boards').all().map(b => {
+        try { b.state = JSON.parse(b.state_json); } catch(e){}
+        return b;
+      });
+      const sessions = db.prepare('SELECT token, user_id, created_at FROM sessions').all();
+      return sendJSON(res, 200, { ok: true, users, boards, sessions });
+    }
+
   if (urlPath.startsWith('/api/')) {
     if (urlPath === '/api/auth/me' && req.method === 'GET') {
       const user = getSessionUser(req);
