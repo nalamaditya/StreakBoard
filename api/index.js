@@ -7,6 +7,8 @@ module.exports = async (req, res) => {
     await handleApiRequest(req, res, null);
   } catch (error) {
     console.error('API Error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
   }
 };
