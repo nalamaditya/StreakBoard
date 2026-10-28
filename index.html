@@ -1278,17 +1278,65 @@ function load(){
   const storeKey = activeUser ? userStorageKey(activeUser.email) : CACHE;
   try {
     const s = localStorage.getItem(storeKey);
-    if (s) { const o = JSON.parse(s); if (o && o.v === 1) { o.pro = true; return o; } }
+    if (s) {
+      const o = JSON.parse(s);
+      if (o && (o.v === 1 || o.habits || o.checks)) {
+        o.v = 1;
+        o.pro = true;
+        return o;
+      }
+    }
   } catch (e) {}
   return null;
 }
+
+let cloudSyncTimer = 0;
+let isCloudSyncing = false;
+let cloudSyncPending = false;
+
+function scheduleCloudSync(delay = 500) {
+  if (!activeUser) return;
+  cloudSyncPending = true;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => {
+    syncToCloud();
+  }, delay);
+}
+
+async function syncToCloud() {
+  if (!activeUser || isCloudSyncing) return;
+  isCloudSyncing = true;
+  cloudSyncPending = false;
+  try {
+    const payload = stateOut();
+    const r = await api('PUT', '/api/state', { data: payload, rev: REV });
+    if (r && r.ok && r.d) {
+      if (r.d.rev) REV = r.d.rev;
+    } else {
+      cloudSyncPending = true;
+    }
+  } catch (err) {
+    console.error('Cloud sync error:', err);
+    cloudSyncPending = true;
+  } finally {
+    isCloudSyncing = false;
+  }
+}
+
 function save(){
   if (EMBED || LOCKED) return;
+  if (!S.v) S.v = 1;
   const storeKey = activeUser ? userStorageKey(activeUser.email) : CACHE;
   try { localStorage.setItem(storeKey, JSON.stringify(S)); } catch (e) {}
+  if (activeUser) {
+    scheduleCloudSync(500);
+  }
 }
 let saveTimer = 0;
-const saveSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); };
+const saveSoon = () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 350);
+};
 
 /* ---------- example data ---------- */
 function rng(seed){ return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -2080,9 +2128,13 @@ const HOME = location.pathname.startsWith('/app') ? '/app/' : '/';
 const toLogin = () => location.replace(MAIN + '/?login=1');
 function stateOut(){ const d = Object.assign({}, S); delete d.pro; delete d.demo; return d; }
 function adopt(data, rev){
-  S = Object.assign(data, {pro: !!(ME && ME.pro), demo:false});
+  if (!data) return;
+  S = Object.assign({}, data, {pro: true, demo: false, v: 1});
   ['checks','mind','weeks'].forEach(f => { if (!S[f]) S[f] = {}; });
-  REV = rev; try { localStorage.setItem(CACHE, JSON.stringify(S)); } catch (e) {}
+  if (!Array.isArray(S.habits)) S.habits = [];
+  REV = rev || 1;
+  const storeKey = activeUser ? userStorageKey(activeUser.email) : CACHE;
+  try { localStorage.setItem(storeKey, JSON.stringify(S)); } catch (e) {}
 }
 async function push(){
   if (pushing) { clearTimeout(pushTimer); pushTimer = setTimeout(push, 500); return; }
@@ -2412,21 +2464,47 @@ async function handleAuthSubmit(e){
 
   // Sync state with database
   if (authMode === 'signup') {
-    S = emptyState();
-    S.habits = [
-      {id:'h1'+Date.now().toString(36), name:'Wake up early', emoji:'⏰', color:'mint', since:key(today0()), sched:{t:'daily'}},
-      {id:'h2'+Date.now().toString(36), name:'Read 10 pages', emoji:'📖', color:'blue', since:key(today0()), sched:{t:'daily'}}
-    ];
+    const existing = load();
+    if (existing && existing.habits && existing.habits.length) {
+      S = existing;
+    } else {
+      S = emptyState();
+      S.habits = [
+        {id:'h1'+Date.now().toString(36), name:'Wake up early', emoji:'⏰', color:'mint', since:key(today0()), sched:{t:'daily'}},
+        {id:'h2'+Date.now().toString(36), name:'Read 10 pages', emoji:'📖', color:'blue', since:key(today0()), sched:{t:'daily'}}
+      ];
+    }
     save();
+    await syncToCloud();
   } else {
     // Pull board from database
+    const local = load();
     const st = await api('GET', '/api/state');
-    if (st && st.ok && st.d && st.d.data) {
-      adopt(st.d.data, st.d.rev);
+    if (st && st.ok && st.d && st.d.data && st.d.data.habits && st.d.data.habits.length) {
+      const serverChecks = Object.keys(st.d.data.checks || {}).length;
+      const localChecks = (local && local.checks ? Object.keys(local.checks).length : 0);
+      const serverHabits = (st.d.data.habits || []).length;
+      const localHabits = (local && local.habits ? local.habits.length : 0);
+
+      // If local has more checks or habits than server, push local to server
+      if (local && (localChecks > serverChecks || (localHabits > serverHabits && serverChecks === 0))) {
+        S = local;
+        REV = Math.max(REV, st.d.rev || 1);
+        save();
+        await syncToCloud();
+      } else {
+        adopt(st.d.data, st.d.rev || 1);
+      }
+    } else if (local && local.habits && local.habits.length) {
+      S = local;
+      save();
+      await syncToCloud();
+    } else if (st && st.ok && st.d && st.d.data) {
+      adopt(st.d.data, st.d.rev || 1);
     } else {
-      const uData = load();
-      if (uData) S = uData;
-      else { S = emptyState(); save(); }
+      S = emptyState();
+      save();
+      await syncToCloud();
     }
   }
 
@@ -3194,6 +3272,10 @@ document.addEventListener('click', e => {
   if (a === 'tab') switchTab(t.dataset.tab);
   else if (a === 'check') { toggleCheck(t.dataset.k, t.dataset.id, t); const ds = $('#sheet-body .day-sheet'); if (ds) openDay(ds.dataset.k); }
   else if (a === 'open-about') openAbout();
+  else if (a === 'google-auth') {
+    const supabaseUrl = 'https://uqifmrumwpkqlzztcdyb.supabase.co';
+    location.href = supabaseUrl + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(location.origin);
+  }
   else if (a === 'toggle-theme') toggleTheme();
   else if (a === 'open-auth') openAuth('login');
   else if (a === 'auth-tab') openAuth(t.dataset.mode);
@@ -3385,24 +3467,107 @@ document.addEventListener('submit', e => {
 
 
 
+function checkOAuthHash(){
+  try {
+    const hash = window.location.hash;
+    if (hash && (hash.includes('access_token=') || hash.includes('refresh_token='))) {
+      const params = new URLSearchParams(hash.replace(/^#/, ''));
+      const token = params.get('access_token');
+      if (token) {
+        localStorage.setItem('sb_auth_token', token);
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        return token;
+      }
+    }
+  } catch(e){}
+  return null;
+}
+checkOAuthHash();
+
 async function checkServerSession(){
   try {
     const me = await api('GET', '/api/auth/me');
     if (me && me.ok && me.d && me.d.user) {
       activeUser = me.d.user;
       setCurrentUser(me.d.user);
+      const local = load();
       const st = await api('GET', '/api/state');
-      if (st && st.ok && st.d && st.d.data) {
-        adopt(st.d.data, st.d.rev);
-      } else {
-        const u = load();
-        if (u) S = u;
+      if (st && st.ok && st.d && st.d.data && st.d.data.habits && st.d.data.habits.length) {
+        const serverChecks = Object.keys(st.d.data.checks || {}).length;
+        const localChecks = (local && local.checks ? Object.keys(local.checks).length : 0);
+        const serverHabits = (st.d.data.habits || []).length;
+        const localHabits = (local && local.habits ? local.habits.length : 0);
+        
+        if (local && (localChecks > serverChecks || (localHabits > serverHabits && serverChecks === 0))) {
+          S = local;
+          REV = Math.max(REV, st.d.rev || 1);
+          save();
+          await syncToCloud();
+        } else {
+          adopt(st.d.data, st.d.rev || 1);
+        }
+      } else if (local && local.habits && local.habits.length) {
+        S = local;
+        save();
+        await syncToCloud();
+      } else if (st && st.ok && st.d && st.d.data) {
+        adopt(st.d.data, st.d.rev || 1);
       }
+      render();
+    }
+  } catch(e){
+    console.error('Session check error:', e);
+  }
+}
+checkServerSession();
+
+window.addEventListener('beforeunload', () => {
+  if (!activeUser || !cloudSyncPending) return;
+  try {
+    const token = localStorage.getItem('sb_auth_token');
+    const payload = JSON.stringify({ data: stateOut(), rev: REV });
+    fetch('/api/state', {
+      method: 'PUT',
+      keepalive: true,
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { 'authorization': 'Bearer ' + token } : {})
+      },
+      body: payload
+    }).catch(() => {});
+  } catch(e){}
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    if (activeUser && cloudSyncPending) {
+      syncToCloud();
+    }
+  } else if (document.visibilityState === 'visible') {
+    if (activeUser && !isCloudSyncing && !cloudSyncPending) {
+      checkCloudUpdate();
+    }
+  }
+});
+
+window.addEventListener('focus', () => {
+  if (activeUser && !isCloudSyncing && !cloudSyncPending) {
+    checkCloudUpdate();
+  }
+});
+
+async function checkCloudUpdate(){
+  if (!activeUser || isCloudSyncing || cloudSyncPending) return;
+  const activeEl = document.activeElement;
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+  try {
+    const st = await api('GET', '/api/state');
+    if (st && st.ok && st.d && st.d.data && st.d.rev && st.d.rev > REV) {
+      adopt(st.d.data, st.d.rev);
       render();
     }
   } catch(e){}
 }
-checkServerSession();
 
 if (EMBED) startEmbed(); else if (DEMO) startDemo(); else if (CLOUD) boot(); else render();
 })();
