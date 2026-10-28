@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Streakboard",
+    "slug": "streakboard",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "streakboard",
+    "splash": {
+      "backgroundColor": "#17191D"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nalamaditya.streakboard"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#17191D"
+      },
+      "package": "com.nalamaditya.streakboard",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "streakboard"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    },
+    "plugins": [
+      "expo-asset"
+    ]
+  }
+}
