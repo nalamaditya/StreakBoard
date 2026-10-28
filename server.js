@@ -3,37 +3,44 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { handleApiRequest } = require('./lib/api-handler');
-const { DatabaseSync } = require('node:sqlite');
 
 const PORT = process.env.PORT || 3000;
 const DB_PATH = path.join(__dirname, 'streakboard.db');
 
-// Initialize SQLite database
-const db = new DatabaseSync(DB_PATH);
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    password_hash TEXT NOT NULL,
-    created_at INTEGER NOT NULL
-  );
+// Safe SQLite initialization (only for local development)
+let db = null;
+if (!process.env.VERCEL) {
+  try {
+    const { DatabaseSync } = require('node:sqlite');
+    db = new DatabaseSync(DB_PATH);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
 
-  CREATE TABLE IF NOT EXISTS boards (
-    user_id TEXT PRIMARY KEY,
-    state_json TEXT NOT NULL,
-    rev INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
+      CREATE TABLE IF NOT EXISTS boards (
+        user_id TEXT PRIMARY KEY,
+        state_json TEXT NOT NULL,
+        rev INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
 
-  CREATE TABLE IF NOT EXISTS sessions (
-    token TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    created_at INTEGER NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-`);
+      CREATE TABLE IF NOT EXISTS sessions (
+        token TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+    `);
+  } catch (e) {
+    console.log('SQLite not loaded (running in serverless or cloud environment)');
+  }
+}
 
 function hashPassword(pass) {
   return crypto.createHash('sha256').update(pass + '_sb_salt_2026').digest('hex');
@@ -52,6 +59,7 @@ function parseCookies(req) {
 }
 
 function getSessionUser(req) {
+  if (!db) return null;
   const cookies = parseCookies(req);
   let token = cookies['sb_token'];
   if (!token && req.headers['authorization']) {
@@ -60,13 +68,17 @@ function getSessionUser(req) {
   }
   if (!token) return null;
 
-  const stmt = db.prepare(`
-    SELECT users.id, users.email, users.name 
-    FROM sessions 
-    JOIN users ON sessions.user_id = users.id 
-    WHERE sessions.token = ?
-  `);
-  return stmt.get(token) || null;
+  try {
+    const stmt = db.prepare(`
+      SELECT users.id, users.email, users.name 
+      FROM sessions 
+      JOIN users ON sessions.user_id = users.id 
+      WHERE sessions.token = ?
+    `);
+    return stmt.get(token) || null;
+  } catch (e) {
+    return null;
+  }
 }
 
 function readBody(req) {
@@ -140,11 +152,15 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`\n======================================================`);
-  console.log(`  Streakboard Server with Sync & Database is RUNNING`);
-  console.log(`  Port: ${PORT}`);
-  console.log(`  Local URL:   http://localhost:${PORT}`);
-  console.log(`  Database:    streakboard.db (SQLite)`);
-  console.log(`======================================================\n`);
-});
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`\n======================================================`);
+    console.log(`  Streakboard Server with Sync & Database is RUNNING`);
+    console.log(`  Port: ${PORT}`);
+    console.log(`  Local URL:   http://localhost:${PORT}`);
+    console.log(`  Database:    ${db ? 'streakboard.db (SQLite)' : 'Supabase (PostgreSQL)'}`);
+    console.log(`======================================================\n`);
+  });
+}
+
+module.exports = server;
