@@ -1554,7 +1554,9 @@ function renderNav(){
   const userLabel = activeUser ? esc(activeUser.name || activeUser.email) : 'Offline Guest';
   $('#rail-brand').innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;width:100%"><div style="display:flex;align-items:center;gap:10px">' + MARK + '<div><b>Streakboard</b><small>' + userLabel + '</small></div></div>'
     + '<button class="pillbtn" data-action="account" style="width:30px;height:30px" title="Account profile">' + (activeUser ? esc(userLabel.slice(0,1).toUpperCase()) : I.user) + '</button></div>';
-  $('#rail-foot').innerHTML = '<button class="rail-theme-btn" data-action="toggle-theme" title="Toggle theme">' + (curTheme === 'dark' ? I.sun + '<span>Light mode</span>' : I.moon + '<span>Dark mode</span>') + '</button><div class="pro-badge">' + I.bolt + 'Offline Mode</div>';
+  $('#rail-foot').innerHTML = '<button class="rail-theme-btn" data-action="toggle-theme" title="Toggle theme">' + (curTheme === 'dark' ? I.sun + '<span>Light mode</span>' : I.moon + '<span>Dark mode</span>') + '</button>'
+    + '<button class="rail-theme-btn" data-action="open-about" title="About Streakboard">ℹ️ <span>About App</span></button>'
+    + '<div class="pro-badge" data-action="open-about" style="cursor:pointer" title="Storage & Sync Status">' + (activeUser ? '☁️ Cloud Sync' : I.bolt + 'Offline Mode') + '</div>';
 }
 
 /* ---------- Today ---------- */
@@ -2434,7 +2436,7 @@ function openAccount(){
     + '<div class="acct-row">Email<span>'+esc(activeUser.email)+'</span></div>'
     + '<div class="acct-row">Data Storage<span>Private & Local</span></div>'
     + '<div class="acct-row">Access<span>Pro Unlocked</span></div></div>'
-    + '<div class="list"><button class="acct-btn" data-action="open-auth">Switch or Add Account</button></div>'
+    + '<div class="list"><button class="acct-btn" data-action="open-auth">Switch or Add Account</button><button class="acct-btn" data-action="open-about" style="margin-top:8px">About StreakBoard App</button></div>'
     + (m.pro && when ? '<div class="acct-row">'+(m.status === 'canceling' ? 'Access' : 'Billing')+'<span>'+note+when+'</span></div>' : '')
     + '</div><div class="list">'
     + (m.pro ? (m.manage_url && m.plan !== 'lifetime' ? '<a class="acct-btn" href="'+esc(m.manage_url)+'" target="_blank" rel="noopener">Manage or cancel subscription</a>' : '') : '<button class="acct-btn" data-action="paywall">Go Pro · 3 days free</button>')
