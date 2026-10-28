@@ -175,7 +175,7 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .cb:active{transform:scale(.85)}
 .cb.on{color:var(--on);background:var(--c);box-shadow:0 0 10px -3px var(--c)}
 .cb:disabled{opacity:.25;cursor:default}
-.cb.extra{opacity:.55}
+.cb.extra{opacity:.85}
 .cb.xl{--s:32px}
 .pop{animation:pop .55s var(--spring)}
 @keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
@@ -1208,8 +1208,8 @@ const dow = d => (d.getDay()+6)%7;
 const dayDiff = (a,b) => Math.round((parse(b) - parse(a)) / 864e5);
 function isDue(h, k){
   const s = h.sched || {t:'daily'};
-  if (s.t === 'days') return s.d.includes(dow(parse(k)));
-  if (s.t === 'every') { const n = dayDiff(s.from || h.since || k, k); return n >= 0 && n % s.n === 0; }
+  if (s.t === 'days') return Array.isArray(s.d) && s.d.includes(dow(parse(k)));
+  if (s.t === 'every') { const n = dayDiff(s.from || h.since || k, k); return Math.abs(n) % (s.n || 2) === 0; }
   return true;
 }
 function schedText(h){
@@ -1747,7 +1747,6 @@ function viewMonth(){
   }
   g += S.habits.map((h,r) => '<button class="mlab" style="--p:'+cvar(h.color)+'" data-action="edit-habit" data-id="'+h.id+'" title="'+esc(h.name)+'"><span class="tile">'+ico(h.emoji)+'</span><span class="t">'+esc(h.name)+'</span></button>'
     + days.map((d,i) => { const k = keys[i], on = isDone(k, h.id), fut = k > tk, due = isDue(h, k), cls = 'mcell' + colCls(i) + (r === 0 ? ' r0' : '') + (r === last ? ' rl' : '');
-        if (!due && !on) return '<div class="'+cls+'"><button class="mrest"'+(fut?' disabled':'')+' data-action="check" data-k="'+k+'" data-id="'+h.id+'" aria-label="'+esc(h.name)+', '+short(d)+', not scheduled"></button></div>';
         return '<div class="'+cls+'" style="--d:'+i+'"><button class="cb'+(on?' on':'')+(due?'':' extra')+(popKey===k+h.id?' pop':'')+'" style="--c:'+cvar(WEEKC[wkIdx(d)])+'"'+(fut?' disabled':'')+' data-action="check" data-k="'+k+'" data-id="'+h.id+'" aria-pressed="'+on+'" aria-label="'+esc(h.name)+', '+short(d)+'">'+TICK+'</button></div>'; }).join('')).join('');
   g += '<div class="mlab sub">Daily score</div>' + keys.map((k,i) => '<div class="sc'+(perf[i]?' pf':'')+'" style="--d:'+i+'">'+(k > tk ? '<i class="future"></i>' : '<i style="--a:'+(14 + r0(k)*86).toFixed(0)+'%" title="'+short(days[i])+': '+pctTxt(r0(k))+(perf[i]?' · perfect day':'')+'"></i>')+'</div>').join('');
   g += '<div class="mlab sub">Progress</div><div class="wave" style="grid-column:span '+n+'">'+waveSvg('p', [{vals: keys.map(k => k > tk || ratioOn(k) === null ? null : ratioOn(k)), stroke:'weeks', end:true}], n, 100, true)+'</div>';
