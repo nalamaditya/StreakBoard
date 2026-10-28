@@ -2,7 +2,9 @@
 
 <div align="center">
 
-**A minimalist, high-performance cross-platform habit tracker, execution planner, and personal life dashboard.**
+<img src="img/banner.png" alt="StreakBoard Banner" width="100%" style="border-radius: 14px; margin-bottom: 16px; box-shadow: 0 12px 30px rgba(0,0,0,0.5);">
+
+**A high-performance cross-platform habit tracker, execution planner, and personal life dashboard.**
 
 Available on the **Web** and **Android (Expo)** with instant **Supabase PostgreSQL** cloud sync and offline-first fallback.
 
@@ -14,7 +16,7 @@ Available on the **Web** and **Android (Expo)** with instant **Supabase PostgreS
 
 ---
 
-### 🌐 [Launch Live Web App](https://streak-board-mauve.vercel.app) &nbsp;•&nbsp; 📱 [Mobile App Setup](#-mobile-app-expo--android) &nbsp;•&nbsp; 📖 [Documentation](#-architecture)
+### 🌐 [Launch Live Web App](https://streak-board-mauve.vercel.app) &nbsp;•&nbsp; 📱 [Mobile App Setup](#-mobile-app-expo--android) &nbsp;•&nbsp; 💻 [GitHub Repository](https://github.com/nalamaditya/StreakBoard) &nbsp;•&nbsp; 📖 [Documentation](#-architecture)
 
 ---
 
@@ -196,6 +198,14 @@ eas build -p android --profile preview
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `NODE_ENV` = `production`
 4. Click **Deploy**. Vercel will deploy both the static frontend and the serverless API routes automatically!
+
+---
+
+## 👤 Author & Maintainer
+
+**Aditya Nalam**
+- GitHub: [@nalamaditya](https://github.com/nalamaditya)
+- Live Web App: [streak-board-mauve.vercel.app](https://streak-board-mauve.vercel.app)
 
 ---
 

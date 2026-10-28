@@ -10,9 +10,20 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Streakboard">
 <meta name="robots" content="noindex">
-<link rel="icon" href="/img/logo.png">
-<link rel="apple-touch-icon" href="/img/logo.png">
-<title>Streakboard</title>
+<link rel="icon" type="image/png" sizes="64x64" href="/img/favicon.png">
+<link rel="apple-touch-icon" sizes="512x512" href="/img/logo.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/img/icon-192.png">
+<meta name="description" content="StreakBoard is a gamified habit tracking and productivity system on Web and native Android mobile with Supabase cloud sync.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="StreakBoard — Gamified Habit Tracker & Daily Board">
+<meta property="og:description" content="Cross-platform habit tracker with multi-device Supabase cloud sync, XP levels, streaks, and money budgeting.">
+<meta property="og:image" content="/img/banner.png">
+<meta property="og:url" content="https://streak-board-mauve.vercel.app">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="StreakBoard — Gamified Habit Tracker & Daily Board">
+<meta name="twitter:description" content="Cross-platform habit tracker with multi-device Supabase cloud sync, XP levels, streaks, and money budgeting.">
+<meta name="twitter:image" content="/img/banner.png">
+<title>StreakBoard — Gamified Habit Tracker & Daily Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Manrope:wght@400;500;600;700&display=swap">
@@ -1030,6 +1041,32 @@ button,.nav-item,.plate,.tabbar,.cb,.cal-d,.mcell{-webkit-user-select:none;user-
 .auth-divider::after{margin-left:10px}
 .auth-link{color:var(--accent);font-size:13px;text-align:center;display:block;cursor:pointer;margin-top:12px;text-decoration:none}
 .auth-link:hover{text-decoration:underline}
+
+/* About Sheet & Ecosystem Styling */
+.about-sheet{max-width:580px;margin:0 auto;padding-bottom:24px}
+.about-hero{text-align:center;padding:16px 10px 14px;display:flex;flex-direction:column;align-items:center}
+.about-logo-wrap{width:84px;height:84px;border-radius:24px;padding:3px;background:linear-gradient(135deg,rgba(99,102,241,.4),rgba(236,72,153,.3));box-shadow:0 12px 28px rgba(99,102,241,.25);margin-bottom:12px;display:flex;align-items:center;justify-content:center}
+.about-logo-img{width:100%;height:100%;border-radius:21px;display:block;object-fit:cover}
+.about-title{font-size:26px;font-weight:800;color:var(--label);margin:0 0 4px;letter-spacing:-0.5px}
+.about-tagline{font-size:13px;color:var(--label-2);max-width:380px;margin:0 auto 12px;line-height:1.4}
+.about-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.about-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid var(--sep);background:var(--fill);color:var(--label-2);text-transform:uppercase;letter-spacing:0.4px}
+.about-badge.version{background:rgba(99,102,241,.15);color:#818CF8;border-color:rgba(99,102,241,.3)}
+.about-badge.web{background:rgba(59,130,246,.15);color:#60A5FA;border-color:rgba(59,130,246,.3)}
+.about-badge.mobile{background:rgba(16,185,129,.15);color:#34D399;border-color:rgba(16,185,129,.3)}
+.about-badge.cloud{background:rgba(236,72,153,.15);color:#F472B6;border-color:rgba(236,72,153,.3)}
+.about-link-row{text-decoration:none;color:inherit;transition:background .15s}
+.about-link-row:hover{background:var(--fill)}
+.about-item-left{display:flex;align-items:center;gap:12px}
+.about-ico{font-size:22px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--fill)}
+.about-item-sub{font-size:12px;color:var(--label-3);margin-top:1px;font-weight:400}
+.about-badge-status{font-size:12px;font-weight:700;color:var(--accent)}
+.about-feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:12px}
+.about-feat-card{background:var(--fill);border:1px solid var(--sep);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.about-feat-card .feat-ico{font-size:20px;margin-bottom:2px}
+.about-feat-card b{font-size:14px;color:var(--label)}
+.about-feat-card span{font-size:12px;color:var(--label-2);line-height:1.35}
+.about-section{margin-top:16px}
 
 .pro-chip, .locked-cta, .go-pro { display: none !important; }
 .locked-preview { filter: none !important; opacity: 1 !important; pointer-events: auto !important; max-height: none !important; -webkit-mask-image: none !important; mask-image: none !important; }
@@ -2425,6 +2462,69 @@ async function logoutUser(){
   toast('Logged out');
 }
 
+function openAbout(){
+  const syncStatus = activeUser ? '<span style="color:var(--mint);font-weight:700">● Cloud Synced (Supabase)</span>' : '<span style="color:var(--yellow);font-weight:700">○ Local Guest Mode</span>';
+  const html = '<div class="form about-sheet">'
+    + '<div class="nav"><span></span><h2>About StreakBoard</h2><button class="r" data-action="close-sheet">Done</button></div>'
+    + '<div class="about-hero">'
+    + '  <div class="about-logo-wrap"><img src="/img/logo.png" alt="StreakBoard Logo" class="about-logo-img"></div>'
+    + '  <h1 class="about-title">StreakBoard</h1>'
+    + '  <div class="about-tagline">Cross-Platform Gamified Habit Tracking & Daily Board</div>'
+    + '  <div class="about-badges">'
+    + '    <span class="about-badge version">v1.0.0</span>'
+    + '    <span class="about-badge web">Web App</span>'
+    + '    <span class="about-badge mobile">Android App</span>'
+    + '    <span class="about-badge cloud">Supabase Cloud</span>'
+    + '  </div>'
+    + '</div>'
+    + '<div class="about-section">'
+    + '  <div class="g-head"><span>Platforms & Deployment</span></div>'
+    + '  <div class="list">'
+    + '    <a class="acct-row about-link-row" href="https://streak-board-mauve.vercel.app" target="_blank" rel="noopener">'
+    + '      <div class="about-item-left"><span class="about-ico">🌐</span><div><b>Live Web App</b><div class="about-item-sub">streak-board-mauve.vercel.app</div></div></div>'
+    + '      <span class="about-badge-status">Active ↗</span>'
+    + '    </a>'
+    + '    <div class="acct-row">'
+    + '      <div class="about-item-left"><span class="about-ico">📱</span><div><b>Android Mobile App</b><div class="about-item-sub">Standalone APK • Expo SDK 52 Native</div></div></div>'
+    + '      <span class="about-badge-status" style="color:var(--mint)">EAS Build</span>'
+    + '    </div>'
+    + '    <a class="acct-row about-link-row" href="https://github.com/nalamaditya/StreakBoard" target="_blank" rel="noopener">'
+    + '      <div class="about-item-left"><span class="about-ico">💻</span><div><b>Source Repository</b><div class="about-item-sub">github.com/nalamaditya/StreakBoard</div></div></div>'
+    + '      <span class="about-badge-status">GitHub ↗</span>'
+    + '    </a>'
+    + '    <div class="acct-row">'
+    + '      <div class="about-item-left"><span class="about-ico">⚡</span><div><b>Cloud Sync & Database</b><div class="about-item-sub">Supabase PostgreSQL with Row Level Security (RLS)</div></div></div>'
+    + '      ' + syncStatus
+    + '    </div>'
+    + '  </div>'
+    + '</div>'
+    + '<div class="about-section">'
+    + '  <div class="g-head"><span>Core Systems & Features</span></div>'
+    + '  <div class="about-feature-grid">'
+    + '    <div class="about-feat-card"><div class="feat-ico">🎯</div><b>Flexible Habits</b><span>Daily, custom weekdays, or interval cadence with streak tracking.</span></div>'
+    + '    <div class="about-feat-card"><div class="feat-ico">⚡</div><b>Gamified XP & Ranks</b><span>Level up from Bronze to Grandmaster with visual rank emblems.</span></div>'
+    + '    <div class="about-feat-card"><div class="feat-ico">👑</div><b>Weekly Boss & Big 3</b><span>Execute your highest-impact goals each week for massive XP bonuses.</span></div>'
+    + '    <div class="about-feat-card"><div class="feat-ico">💰</div><b>Daily Money Budget</b><span>Dynamic daily spend allowance calculation and expense logging.</span></div>'
+    + '    <div class="about-feat-card"><div class="feat-ico">📊</div><b>12-Week Heatmap</b><span>Interactive GitHub-style consistency map with activity rings.</span></div>'
+    + '    <div class="about-feat-card"><div class="feat-ico">🔄</div><b>Zero-Friction Sync</b><span>Real-time cross sync keeps your web and mobile boards identical.</span></div>'
+    + '  </div>'
+    + '</div>'
+    + '<div class="about-section">'
+    + '  <div class="g-head"><span>Creator & Community</span></div>'
+    + '  <div class="list">'
+    + '    <div class="acct-row"><div><b>Developer</b><div class="about-item-sub">Built & Designed by</div></div><span style="font-weight:700;color:var(--accent)">Aditya Nalam</span></div>'
+    + '    <div class="acct-row"><div><b>Release Version</b><div class="about-item-sub">Full Production Release</div></div><span>v1.0.0 (Build 2026.10)</span></div>'
+    + '    <div class="acct-row"><div><b>License</b><div class="about-item-sub">Open Source</div></div><span>MIT License</span></div>'
+    + '  </div>'
+    + '</div>'
+    + '<div class="list" style="margin-top:16px">'
+    + '  <a class="btn" style="text-align:center;text-decoration:none;display:block" href="https://streak-board-mauve.vercel.app" target="_blank" rel="noopener">Open Live Web App ↗</a>'
+    + '  <a class="acct-btn" style="margin-top:8px;text-align:center;text-decoration:none;display:block" href="https://github.com/nalamaditya/StreakBoard" target="_blank" rel="noopener">Star on GitHub ⭐</a>'
+    + '</div>'
+    + '</div>';
+  openSheet(html);
+}
+
 function openAccount(){
   if (!activeUser) { openAuth('login'); return; }
   const m = ME || {}, plan = m.plan === 'year' ? 'Yearly' : m.plan === 'month' ? 'Monthly' : m.plan === 'week' ? 'Weekly' : m.plan === 'lifetime' ? 'Lifetime' : '';
@@ -3093,6 +3193,7 @@ document.addEventListener('click', e => {
   if (a === 'habits') { fromHabits = false; openHabits(); return; }
   if (a === 'tab') switchTab(t.dataset.tab);
   else if (a === 'check') { toggleCheck(t.dataset.k, t.dataset.id, t); const ds = $('#sheet-body .day-sheet'); if (ds) openDay(ds.dataset.k); }
+  else if (a === 'open-about') openAbout();
   else if (a === 'toggle-theme') toggleTheme();
   else if (a === 'open-auth') openAuth('login');
   else if (a === 'auth-tab') openAuth(t.dataset.mode);

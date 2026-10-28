@@ -6,7 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert
+  Alert,
+  Linking
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useBoard } from '../context/BoardContext';
@@ -111,6 +112,54 @@ export const ProfileScreen: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth
           {['mint', 'blue', 'lavender', 'coral', 'peach', 'rose', 'lemon', 'teal'].map(c => (
             <View key={c} style={[styles.paletteDot, { backgroundColor: getHabitColor(c) }]} />
           ))}
+        </View>
+      </View>
+
+      {/* About StreakBoard App & Web */}
+      <View style={styles.menuSection}>
+        <Text style={styles.sectionTitle}>About StreakBoard</Text>
+        <View style={styles.aboutCard}>
+          <Text style={styles.aboutHeading}>StreakBoard v1.0.0</Text>
+          <Text style={styles.aboutDesc}>
+            Cross-platform gamified productivity system. Track habits, gain XP, conquer weekly boss goals, and manage daily spend across Web and Android.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.aboutLinkRow}
+            onPress={() => Linking.openURL('https://streak-board-mauve.vercel.app')}
+          >
+            <Text style={styles.aboutLinkEmoji}>🌐</Text>
+            <View style={styles.aboutLinkTextWrap}>
+              <Text style={styles.aboutLinkTitle}>Live Web Application</Text>
+              <Text style={styles.aboutLinkSubtitle}>streak-board-mauve.vercel.app</Text>
+            </View>
+            <Text style={styles.aboutLinkArrow}>↗</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.aboutLinkRow}
+            onPress={() => Linking.openURL('https://github.com/nalamaditya/StreakBoard')}
+          >
+            <Text style={styles.aboutLinkEmoji}>💻</Text>
+            <View style={styles.aboutLinkTextWrap}>
+              <Text style={styles.aboutLinkTitle}>GitHub Repository</Text>
+              <Text style={styles.aboutLinkSubtitle}>github.com/nalamaditya/StreakBoard</Text>
+            </View>
+            <Text style={styles.aboutLinkArrow}>↗</Text>
+          </TouchableOpacity>
+
+          <View style={styles.aboutMetaRow}>
+            <Text style={styles.aboutMetaLabel}>Developer</Text>
+            <Text style={styles.aboutMetaVal}>Aditya Nalam</Text>
+          </View>
+          <View style={styles.aboutMetaRow}>
+            <Text style={styles.aboutMetaLabel}>Cloud Database</Text>
+            <Text style={styles.aboutMetaVal}>Supabase PostgreSQL (RLS)</Text>
+          </View>
+          <View style={styles.aboutMetaRow}>
+            <Text style={styles.aboutMetaLabel}>Mobile Framework</Text>
+            <Text style={styles.aboutMetaVal}>Expo SDK 52 Native</Text>
+          </View>
         </View>
       </View>
 
@@ -301,6 +350,73 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
+  },
+  aboutCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  aboutHeading: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 6,
+  },
+  aboutDesc: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  aboutLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  aboutLinkEmoji: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  aboutLinkTextWrap: {
+    flex: 1,
+  },
+  aboutLinkTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  aboutLinkSubtitle: {
+    fontSize: 11,
+    color: colors.accent,
+    marginTop: 1,
+  },
+  aboutLinkArrow: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginLeft: 6,
+  },
+  aboutMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginTop: 4,
+  },
+  aboutMetaLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  aboutMetaVal: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
   },
   signOutButton: {
     backgroundColor: colors.card,
